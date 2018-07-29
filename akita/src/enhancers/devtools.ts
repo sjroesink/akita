@@ -43,9 +43,10 @@ export function akitaDevtools(ngZone, options: Partial<DevtoolsOptions> = {}) {
 
       const { type, entityId } = globalState.getAction();
 
-      const storeName = capitalize(action.payload.name);
+      const _storeName = capitalize(action.payload.name || '');
       let msg;
-      msg = isDefined(entityId) ? `${storeName} - ${type} (ids: ${entityId})` : `${storeName} - ${type}`;
+      let storeName = _storeName ? `${_storeName + ' - '}` : '';
+      msg = isDefined(entityId) ? `${storeName} ${type} (ids: ${entityId})` : `${storeName}${type}`;
 
       if (options.logTrace) {
         console.group(msg);

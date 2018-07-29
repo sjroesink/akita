@@ -1,5 +1,5 @@
 import { HashMap, ID } from './types';
-import { BehaviorSubject, Observable, Subject } from 'rxjs';
+import { BehaviorSubject, Observable, ReplaySubject } from 'rxjs';
 import { distinctUntilChanged, map } from 'rxjs/operators';
 import { AkitaImmutabilityError } from '../internal/error';
 import { commit, isTransactionInProcess } from '../internal/transaction.internal';
@@ -20,10 +20,10 @@ export const enum Actions {
 
 export type Action = {
   type: Actions;
-  payload: HashMap<any>;
+  payload?: HashMap<any>;
 };
 
-export const rootDispatcher = new Subject<Action>();
+export const rootDispatcher = new ReplaySubject<Action>(10);
 
 function nextState(storeName, initialState = false) {
   return {

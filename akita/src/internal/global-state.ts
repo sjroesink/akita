@@ -5,6 +5,7 @@ export type Action = {
   type: string;
   entityId?: ID[];
   payload?: any;
+  force?: boolean;
 };
 
 const initialAction = { type: '@@INIT' };
