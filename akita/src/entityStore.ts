@@ -83,7 +83,7 @@ export class EntityStore<S extends EntityState = any, EntityType = getEntityType
       })
     );
 
-    this.updateCache();
+    this.applyCacheTTL();
 
     if (this.hasInitialUIState()) {
       this.handleUICreation();
@@ -103,7 +103,7 @@ export class EntityStore<S extends EntityState = any, EntityType = getEntityType
    *
    * this.store.add(Entity, { loading: false })
    */
-  add(entities: OrArray<EntityType>, options: AddEntitiesOptions = { loading: false }) {
+  add(entities: OrArray<EntityType>, options: AddEntitiesOptions = { loading: false, cached: false }) {
     const collection = coerceArray(entities);
 
     if (isEmpty(collection)) return;
@@ -116,13 +116,14 @@ export class EntityStore<S extends EntityState = any, EntityType = getEntityType
       options
     });
 
+    data.newState.loading = options.loading;
+    data.newState.cache$ = options.cached;
+
     if (data) {
       isDev() && setAction('Add Entity');
 
-      this._setState(() => ({
-        ...data.newState,
-        loading: options.loading
-      }));
+      this._setState(() => data.newState);
+
       if (this.hasInitialUIState()) {
         this.handleUICreation(true);
       }
@@ -330,10 +331,6 @@ export class EntityStore<S extends EntityState = any, EntityType = getEntityType
 
     isDev() && setAction('Remove Entity', ids);
     this._setState((state: StateWithActive<S>) => removeEntities({ state, ids }));
-    if (ids === null) {
-      this.setHasCache(false);
-    }
-
     this.handleUIRemove(ids);
     this.entityActions.next({ type: EntityActions.Remove, ids });
   }
@@ -516,8 +513,7 @@ export class EntityStore<S extends EntityState = any, EntityType = getEntityType
     });
   }
 
-  private updateCache() {
-    this.setHasCache(true);
+  private applyCacheTTL() {
     const ttlConfig = this.cacheConfig && this.cacheConfig.ttl;
     if (ttlConfig) {
       if (this.cache.ttl !== null) {

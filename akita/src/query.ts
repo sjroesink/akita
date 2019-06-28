@@ -12,7 +12,7 @@ export class Query<S> {
 
   constructor(protected store: Store<S>) {
     this.__store__ = store;
-    if(isDev()) {
+    if (isDev()) {
       // @internal
       __queries__[store.storeName] = this;
     }
@@ -89,7 +89,7 @@ export class Query<S> {
    * )
    */
   selectHasCache(): Observable<boolean> {
-    return this.store._cache().asObservable();
+    return this.select(state => (state as S & { cache$: boolean }).cache$);
   }
 
   /**
@@ -101,7 +101,7 @@ export class Query<S> {
    *
    */
   getHasCache(): boolean {
-    return this.store._cache().value;
+    return (this.getValue() as S & { cache$: boolean }).cache$;
   }
 
   // @internal

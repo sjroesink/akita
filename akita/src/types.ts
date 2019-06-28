@@ -6,10 +6,16 @@ export interface HashMap<T> {
 }
 
 export interface EntityState<E = any, IDType = any> {
+  // @internal
   entities?: HashMap<E>;
+  // @internal
   ids?: IDType[];
+  // @internal
   loading?: boolean;
+  // @internal
   error?: any;
+  // @internal
+  cache$?: boolean;
   [key: string]: any;
 }
 
@@ -41,7 +47,6 @@ export type PreAddEntity<Entity> = (entity: Entity) => Entity;
 export type PreUpdateEntity<Entity> = (prevEntity: Entity, nextEntity: Entity) => Entity;
 
 export type StoreCache = {
-  active: BehaviorSubject<boolean>;
   ttl: number;
 };
 export type ArrayProperties<T> = { [K in keyof T]: T[K] extends any[] ? K : never }[keyof T];

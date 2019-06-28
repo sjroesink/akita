@@ -19,10 +19,13 @@ export function removeEntities<S extends EntityState<E>, E>({ state, ids }: Remo
     }
   }
 
+  const newIds = state.ids.filter(current => ids.includes(current) === false);
+
   const newState = {
     ...state,
     entities: newEntities,
-    ids: state.ids.filter(current => ids.includes(current) === false)
+    ids: newIds,
+    cache$: !!newIds.length
   };
 
   if (hasActiveState(state)) {
@@ -38,6 +41,7 @@ export function removeAllEntities<S>(state: StateWithActive<S>): S {
     ...state,
     entities: {},
     ids: [],
+    cache$: false,
     active: isMultiActiveState(state.active) ? [] : null
   };
 }

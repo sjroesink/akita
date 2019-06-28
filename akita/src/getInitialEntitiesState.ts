@@ -6,5 +6,6 @@ export const getInitialEntitiesState = () =>
     entities: {},
     ids: [],
     loading: true,
-    error: null
+    error: null,
+    cache$: false
   } as EntityState);

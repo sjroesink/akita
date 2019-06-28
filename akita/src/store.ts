@@ -45,7 +45,6 @@ export class Store<S> {
   private inTransaction = false;
   private _initialState: S;
   protected cache: StoreCache = {
-    active: new BehaviorSubject<boolean>(false),
     ttl: null
   };
 
@@ -79,8 +78,11 @@ export class Store<S> {
    *
    */
   setHasCache(hasCache: boolean) {
-    if (hasCache !== this.cache.active.value) {
-      this.cache.active.next(hasCache);
+    if (hasCache !== (this._value() as S & { cache$: boolean }).cache$) {
+      isDev() && setAction('Set Cache');
+      this.update({
+        cache$: hasCache
+      } as S & { cache$: boolean });
     }
   }
 
@@ -110,11 +112,6 @@ export class Store<S> {
   // @internal
   _value(): S {
     return this.storeValue;
-  }
-
-  // @internal
-  _cache(): BehaviorSubject<boolean> {
-    return this.cache.active;
   }
 
   // @internal
@@ -234,7 +231,6 @@ export class Store<S> {
       delete __stores__[this.storeName];
       dispatchDeleted(this.storeName);
       this.setHasCache(false);
-      this.cache.active.complete();
     }
   }
 

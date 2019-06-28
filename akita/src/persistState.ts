@@ -35,7 +35,7 @@ function isPromise(v: any) {
 }
 
 function observify(asyncOrValue: any) {
-  if(isPromise(asyncOrValue) || isObservable(asyncOrValue)) {
+  if (isPromise(asyncOrValue) || isObservable(asyncOrValue)) {
     return from(asyncOrValue);
   }
 
@@ -73,7 +73,7 @@ export interface PersistStateParams {
 }
 
 export function persistState(params?: Partial<PersistStateParams>) {
-  if(isNotBrowser) return;
+  if (isNotBrowser) return;
 
   const defaults: PersistStateParams = {
     key: 'AkitaStores',
@@ -90,20 +90,24 @@ export function persistState(params?: Partial<PersistStateParams>) {
       return state;
     },
     skipStorageUpdate: getSkipStorageUpdate,
-    preStorageUpdateOperator: () => (source) => source
+    preStorageUpdateOperator: () => source => source
   };
 
-  const { storage, deserialize, serialize, include, exclude, key, preStorageUpdate, persistOnDestroy, preStorageUpdateOperator, preStoreUpdate, skipStorageUpdate } = Object.assign({}, defaults, params);
+  const { storage, deserialize, serialize, include, exclude, key, preStorageUpdate, persistOnDestroy, preStorageUpdateOperator, preStoreUpdate, skipStorageUpdate } = Object.assign(
+    {},
+    defaults,
+    params
+  );
 
   const hasInclude = include.length > 0;
   const hasExclude = exclude.length > 0;
   let includeStores: HashMap<string>;
 
-  if(hasInclude && hasExclude) {
-    throw new AkitaError('You can\'t use both include and exclude');
+  if (hasInclude && hasExclude) {
+    throw new AkitaError("You can't use both include and exclude");
   }
 
-  if(hasInclude) {
+  if (hasInclude) {
     includeStores = include.reduce((acc, path) => {
       const storeName = path.split('.')[0];
       acc[storeName] = path;
@@ -130,8 +134,10 @@ export function persistState(params?: Partial<PersistStateParams>) {
   observify(storage.getItem(key)).subscribe((value: any) => {
     const storageState = isObject(value) ? value : deserialize(value || '{}');
 
-    function save(storeCache) {
-      storageState['$cache'] = { ...(storageState['$cache'] || {}), ...storeCache };
+    function save(storeName) {
+      const cache = storageState['$cache'] || {};
+      cache[storeName] = __stores__[storeName]._value()['cache$'];
+      storageState['$cache'] = cache;
       const storageValue = Object.assign({}, storageState, acc);
 
       buffer.push(storage.setItem(key, isLocalStorage ? serialize(storageValue) : storageValue));
@@ -141,64 +147,69 @@ export function persistState(params?: Partial<PersistStateParams>) {
     function subscribe(storeName, path) {
       stores[storeName] = __stores__[storeName]
         ._select(state => getValue(state, path))
-        .pipe(skip(1),
+        .pipe(
+          skip(1),
           filter(() => skipStorageUpdate() === false),
-          preStorageUpdateOperator())
+          preStorageUpdateOperator()
+        )
         .subscribe(data => {
           acc[storeName] = preStorageUpdate(storeName, data);
-          Promise.resolve().then(() => save({ [storeName]: __stores__[storeName]._cache().getValue() }));
+          Promise.resolve().then(() => save(storeName));
         });
     }
 
     function setInitial(storeName, store, path) {
-      if(storeName in storageState) {
+      if (storeName in storageState) {
         setAction('@PersistState');
         store._setState(state => {
           return setValue(state, path, preStoreUpdate(storeName, storageState[storeName]));
         });
         const hasCache = storageState['$cache'] ? storageState['$cache'][storeName] : false;
-        __stores__[storeName].setHasCache(hasCache);
-        if(store.setDirty) {
-          store.setDirty();
+        if (hasCache === true) {
+          __stores__[storeName].setHasCache(hasCache);
         }
       }
     }
 
-    subscriptions.push($$deleteStore.subscribe(storeName => {
-      if(stores[storeName]) {
-        if(persistOnDestroy === false) {
-          delete storageState[storeName];
-          save(false);
+    subscriptions.push(
+      $$deleteStore.subscribe(storeName => {
+        if (stores[storeName]) {
+          if (persistOnDestroy === false) {
+            delete storageState[storeName];
+            save(false);
+          }
+          stores[storeName].unsubscribe();
+          stores[storeName] = null;
         }
-        stores[storeName].unsubscribe();
-        stores[storeName] = null;
-      }
-    }));
+      })
+    );
 
-    subscriptions.push($$addStore.subscribe(storeName => {
-      if(hasExclude && exclude.includes(storeName)) {
-        return;
-      }
-
-      const store = __stores__[storeName];
-      if(hasInclude) {
-        const path = includeStores[storeName];
-        if(!path) {
+    subscriptions.push(
+      $$addStore.subscribe(storeName => {
+        if (hasExclude && exclude.includes(storeName)) {
           return;
         }
-        setInitial(storeName, store, path);
-        subscribe(storeName, path);
-      } else {
-        setInitial(storeName, store, storeName);
-        subscribe(storeName, storeName);
-      }
-    }));
+
+        const store = __stores__[storeName];
+        if (hasInclude) {
+          const path = includeStores[storeName];
+          if (!path) {
+            return;
+          }
+          setInitial(storeName, store, path);
+          subscribe(storeName, path);
+        } else {
+          setInitial(storeName, store, storeName);
+          subscribe(storeName, storeName);
+        }
+      })
+    );
   });
 
   return {
     destroy() {
       subscriptions.forEach(s => s.unsubscribe());
-      for(let i = 0, keys = Object.keys(stores); i < keys.length; i++) {
+      for (let i = 0, keys = Object.keys(stores); i < keys.length; i++) {
         const storeName = keys[i];
         stores[storeName].unsubscribe();
       }
@@ -208,7 +219,7 @@ export function persistState(params?: Partial<PersistStateParams>) {
       storage.clear();
     },
     clearStore(storeName?: string) {
-      if(isNil(storeName)) {
+      if (isNil(storeName)) {
         const value = observify(storage.setItem(key, '{}'));
         value.subscribe();
         return;
@@ -217,7 +228,7 @@ export function persistState(params?: Partial<PersistStateParams>) {
       observify(value).subscribe(v => {
         const storageState = deserialize(v || '{}');
 
-        if(storageState[storeName]) {
+        if (storageState[storeName]) {
           delete storageState[storeName];
           const value = observify(storage.setItem(key, serialize(storageState)));
           value.subscribe();
@@ -226,4 +237,3 @@ export function persistState(params?: Partial<PersistStateParams>) {
     }
   };
 }
-

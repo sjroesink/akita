@@ -9,7 +9,7 @@ export type AddEntitiesParams<State, Entity> = {
   preAddEntity: PreAddEntity<Entity>;
 };
 
-export type AddEntitiesOptions = { prepend?: boolean; loading?: boolean };
+export type AddEntitiesOptions = { prepend?: boolean; loading?: boolean; cached?: boolean };
 
 // @internal
 export function addEntities<S extends EntityState<E>, E>({ state, entities, idKey, options = {}, preAddEntity }: AddEntitiesParams<S, E>) {
